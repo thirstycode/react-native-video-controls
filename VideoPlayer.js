@@ -31,6 +31,11 @@ export default class VideoPlayer extends Component {
     volume: 1,
     title: '',
     rate: 1,
+    caption:true,
+    selectedTextTrack:{
+      type: 'title',
+      value: 'English CC',
+    }
   };
 
   constructor(props) {
@@ -67,6 +72,11 @@ export default class VideoPlayer extends Component {
       currentTime: 0,
       error: false,
       duration: 0,
+      caption:true,
+      selectedTextTrack:{
+        type: 'title',
+        value: 'English CC',
+      }
     };
 
     /**
@@ -105,6 +115,7 @@ export default class VideoPlayer extends Component {
     this.methods = {
       toggleFullscreen: this._toggleFullscreen.bind(this),
       togglePlayPause: this._togglePlayPause.bind(this),
+      toggleCaptions: this._toggleCaptions.bind(this),
       toggleControls: this._toggleControls.bind(this),
       toggleTimer: this._toggleTimer.bind(this),
     };
@@ -502,6 +513,28 @@ export default class VideoPlayer extends Component {
     this.setState(state);
   }
 
+  _toggleCaptions() {
+    console.log("Show captions ",this.state.caption)
+    let state = this.state;
+    state.caption = !state.caption;
+
+    if(state.caption){
+      state.selectedTextTrack = {
+        type: 'title',
+        value: 'English CC',
+      }
+    }
+    else{
+      state.selectedTextTrack = {
+        type: 'disable',
+        value: 'English CC',
+      }
+    }
+
+    this.setState(state);
+    console.log("Show captions ",this.state.selectedTextTrack)
+  }
+
   /**
    * Toggle between showing time remaining or
    * video duration in the timer control
@@ -788,22 +821,15 @@ export default class VideoPlayer extends Component {
         this.setSeekerPosition(position);
         let state = this.state;
 
-        if (
-          this.player.scrubbingTimeStep > 0 &&
-          !state.loading &&
-          !state.scrubbing
-        ) {
+        if (this.player.scrubbingTimeStep > 0 && !state.loading && !state.scrubbing) {
           const time = this.calculateTimeFromSeekerPosition();
           const timeDifference = Math.abs(state.currentTime - time) * 1000;
 
-          if (
-            time < state.duration &&
-            timeDifference >= this.player.scrubbingTimeStep
-          ) {
+          if (time < state.duration && timeDifference >= this.player.scrubbingTimeStep) {
             state.scrubbing = true;
 
             this.setState(state);
-            setTimeout(() => {
+            setTimeout( () => {
               this.player.ref.seek(time, this.player.scrubbingTimeStep);
             }, 1);
           }
@@ -1024,6 +1050,9 @@ export default class VideoPlayer extends Component {
     const playPauseControl = this.props.disablePlayPause
       ? this.renderNullControl()
       : this.renderPlayPause();
+    const captionControl = this.props.disableCaptionControl
+      ? this.renderNullControl()
+      : this.renderCaptionControl();
 
     return (
       <Animated.View
@@ -1042,6 +1071,7 @@ export default class VideoPlayer extends Component {
           <SafeAreaView
             style={[styles.controls.row, styles.controls.bottomControlGroup]}>
             {playPauseControl}
+            {captionControl}
             {this.renderTitle()}
             {timerControl}
           </SafeAreaView>
@@ -1102,6 +1132,18 @@ export default class VideoPlayer extends Component {
     return this.renderControl(
       <Image source={source} />,
       this.methods.togglePlayPause,
+      styles.controls.playPause,
+    );
+  }
+
+  /**
+   * Render the caption button and show the respective icon
+   */
+  renderCaptionControl() {
+    // let source = require('./assets/img/cc.png')
+    return this.renderControl(
+      <Text style={styles.controls.captionstext} numberOfLines={ 1 }>cc</Text>,
+      this.methods.toggleCaptions,
       styles.controls.playPause,
     );
   }
@@ -1191,6 +1233,7 @@ export default class VideoPlayer extends Component {
         <View style={[styles.player.container, this.styles.containerStyle]}>
           <Video
             {...this.props}
+            selectedTextTrack={this.state.selectedTextTrack}
             ref={videoPlayer => (this.player.ref = videoPlayer)}
             resizeMode={this.state.resizeMode}
             volume={this.state.volume}
@@ -1338,6 +1381,13 @@ const styles = {
       position: 'relative',
       width: 80,
       zIndex: 0,
+    },
+    captionstext: {
+      color:'white',
+      backgroundColor: 'transparent',
+      fontWeight: 'bold',
+      fontSize: 14,
+      textAlign: 'right',
     },
     title: {
       alignItems: 'center',
